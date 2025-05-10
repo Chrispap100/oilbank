@@ -2,23 +2,26 @@
 body {
     font-family: Arial, sans-serif;
     text-align: center;
-    background: #f0f0f0;
+    background: #f8f8f8;
     padding: 2rem;
 }
 form input, form select, form button {
     display: block;
     margin: 0.5rem auto;
     padding: 0.5rem;
-    width: 80%;
+    width: 90%;
     max-width: 300px;
 }
 table {
-    width: 90%;
+    width: 95%;
     margin: 2rem auto;
     border-collapse: collapse;
 }
 th, td {
-    border: 1px solid #ccc;
+    border: 1px solid #ddd;
     padding: 0.5rem;
     text-align: center;
+}
+tr:nth-child(even) {
+    background-color: #f2f2f2;
 }

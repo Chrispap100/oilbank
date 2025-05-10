@@ -3,11 +3,11 @@
 <html lang="el">
 <head>
     <meta charset="UTF-8">
-    <title>OilBank Upgrade</title>
+    <title>OilBank - V3</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>OilBank - Καταγραφή Καυσίμων</h1>
+    <h1>OilBank Καταγραφή Καυσίμων</h1>
     <form id="fuelForm">
         <input type="text" id="vehicle" placeholder="Όχημα" required>
         <select id="fuelType">
@@ -17,11 +17,16 @@
         </select>
         <input type="text" id="station" placeholder="Πρατήριο" required>
         <input type="number" id="amount" placeholder="Ποσό (€)" required>
-        <input type="number" id="price" placeholder="Τιμή ανά λίτρο (€)" step="0.01" required>
+        <input type="number" id="price" placeholder="Τιμή/L (€)" step="0.01" required>
         <input type="date" id="date" required>
         <button type="submit">Καταχώρηση</button>
     </form>
+
     <h2>Καταγραφές</h2>
+    <label for="vehicleFilter">Φίλτρο οχήματος:</label>
+    <input type="text" id="vehicleFilter" placeholder="Όχημα...">
+    <button onclick="exportToCSV()">Εξαγωγή CSV</button>
+
     <table id="logTable">
         <thead>
             <tr>
@@ -34,6 +39,7 @@
                 <th>Λίτρα</th>
                 <th>ΦΠΑ</th>
                 <th>Καθαρό</th>
+                <th>Ενέργεια</th>
             </tr>
         </thead>
         <tbody></tbody>
