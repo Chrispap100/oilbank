@@ -1,9 +1,58 @@
 
+document.getElementById('vehicleForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const plate = document.getElementById('plate').value;
+    const model = document.getElementById('model').value;
+    const fuel = document.getElementById('fuelKind').value;
+    let vehicles = JSON.parse(localStorage.getItem('vehicles')) || [];
+    vehicles.push({ plate, model, fuel });
+    localStorage.setItem('vehicles', JSON.stringify(vehicles));
+    displayVehicles();
+    populateVehicleSelect();
+    this.reset();
+});
+
+function displayVehicles() {
+    const list = document.getElementById('vehicleList');
+    list.innerHTML = '';
+    const vehicles = JSON.parse(localStorage.getItem('vehicles')) || [];
+    vehicles.forEach((v, i) => {
+        const li = document.createElement('li');
+        li.textContent = `${v.plate} - ${v.model} (${v.fuel}) `;
+        const delBtn = document.createElement('button');
+        delBtn.textContent = "Διαγραφή";
+        delBtn.classList.add('delete');
+        delBtn.onclick = () => {
+            vehicles.splice(i, 1);
+            localStorage.setItem('vehicles', JSON.stringify(vehicles));
+            displayVehicles();
+            populateVehicleSelect();
+        };
+        li.appendChild(delBtn);
+        list.appendChild(li);
+    });
+}
+
+function populateVehicleSelect() {
+    const select = document.getElementById('vehicleSelect');
+    select.innerHTML = '';
+    const vehicles = JSON.parse(localStorage.getItem('vehicles')) || [];
+    vehicles.forEach(v => {
+        const option = document.createElement('option');
+        option.value = v.plate;
+        option.textContent = `${v.plate} - ${v.model}`;
+        select.appendChild(option);
+    });
+}
+
 document.getElementById('fuelForm').addEventListener('submit', function(e) {
     e.preventDefault();
+    const vehicle = document.getElementById('vehicleSelect').value;
+    const vehicles = JSON.parse(localStorage.getItem('vehicles')) || [];
+    const vInfo = vehicles.find(v => v.plate === vehicle);
     const entry = {
-        vehicle: document.getElementById('vehicle').value,
-        fuelType: document.getElementById('fuelType').value,
+        vehicle,
+        fuelType: vInfo ? vInfo.fuel : "Άγνωστο",
         station: document.getElementById('station').value,
         amount: parseFloat(document.getElementById('amount').value),
         price: parseFloat(document.getElementById('price').value),
@@ -23,9 +72,7 @@ function displayLogs() {
     const tbody = document.querySelector('#logTable tbody');
     tbody.innerHTML = '';
     const logs = JSON.parse(localStorage.getItem('fuelLogs')) || [];
-    const filter = document.getElementById('vehicleFilter').value.toLowerCase();
     logs.forEach((log, index) => {
-        if (!log.vehicle.toLowerCase().includes(filter)) return;
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${log.date}</td>
@@ -64,5 +111,8 @@ function exportToCSV() {
     a.click();
 }
 
-document.getElementById('vehicleFilter').addEventListener('input', displayLogs);
-window.onload = displayLogs;
+window.onload = () => {
+    displayVehicles();
+    populateVehicleSelect();
+    displayLogs();
+};
