@@ -3,20 +3,41 @@
 <html lang="el">
 <head>
     <meta charset="UTF-8">
-    <title>OilBank Light</title>
+    <title>OilBank Upgrade</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>OilBank Light</h1>
+    <h1>OilBank - Καταγραφή Καυσίμων</h1>
     <form id="fuelForm">
         <input type="text" id="vehicle" placeholder="Όχημα" required>
+        <select id="fuelType">
+            <option value="Βενζίνη">Βενζίνη</option>
+            <option value="Πετρέλαιο">Πετρέλαιο</option>
+            <option value="Αέριο">Αέριο</option>
+        </select>
+        <input type="text" id="station" placeholder="Πρατήριο" required>
         <input type="number" id="amount" placeholder="Ποσό (€)" required>
         <input type="number" id="price" placeholder="Τιμή ανά λίτρο (€)" step="0.01" required>
         <input type="date" id="date" required>
         <button type="submit">Καταχώρηση</button>
     </form>
     <h2>Καταγραφές</h2>
-    <ul id="logList"></ul>
+    <table id="logTable">
+        <thead>
+            <tr>
+                <th>Ημερομηνία</th>
+                <th>Όχημα</th>
+                <th>Καύσιμο</th>
+                <th>Πρατήριο</th>
+                <th>Ποσό</th>
+                <th>Τιμή/L</th>
+                <th>Λίτρα</th>
+                <th>ΦΠΑ</th>
+                <th>Καθαρό</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
     <script src="script.js"></script>
 </body>
 </html>
