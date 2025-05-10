@@ -1,4 +1,6 @@
 
+let deletedLog = null;
+
 document.getElementById('vehicleForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const plate = document.getElementById('plate').value;
@@ -65,6 +67,8 @@ document.getElementById('fuelForm').addEventListener('submit', function(e) {
     logs.push(entry);
     localStorage.setItem('fuelLogs', JSON.stringify(logs));
     displayLogs();
+    displayTotals();
+    displayRecentLogs();
     this.reset();
 });
 
@@ -84,7 +88,9 @@ function displayLogs() {
             <td>${log.litres} L</td>
             <td>€${log.vat}</td>
             <td>€${log.net}</td>
-            <td><button onclick="deleteEntry(${index})">Διαγραφή</button></td>
+            <td>
+                <button onclick="deleteEntry(${index})">Διαγραφή</button>
+            </td>
         `;
         tbody.appendChild(row);
     });
@@ -92,9 +98,32 @@ function displayLogs() {
 
 function deleteEntry(index) {
     let logs = JSON.parse(localStorage.getItem('fuelLogs')) || [];
+    deletedLog = logs[index];
     logs.splice(index, 1);
     localStorage.setItem('fuelLogs', JSON.stringify(logs));
     displayLogs();
+    displayTotals();
+    displayRecentLogs();
+    showUndo();
+}
+
+function showUndo() {
+    const container = document.getElementById('undoContainer');
+    container.innerHTML = '<button onclick="undoDelete()">Αναίρεση Διαγραφής</button>';
+    setTimeout(() => { container.innerHTML = ''; }, 10000);
+}
+
+function undoDelete() {
+    if (deletedLog) {
+        let logs = JSON.parse(localStorage.getItem('fuelLogs')) || [];
+        logs.push(deletedLog);
+        localStorage.setItem('fuelLogs', JSON.stringify(logs));
+        displayLogs();
+        displayTotals();
+        displayRecentLogs();
+        deletedLog = null;
+        document.getElementById('undoContainer').innerHTML = '';
+    }
 }
 
 function exportToCSV() {
@@ -111,8 +140,38 @@ function exportToCSV() {
     a.click();
 }
 
+function displayTotals() {
+    const logs = JSON.parse(localStorage.getItem('fuelLogs')) || [];
+    let totalAmount = 0;
+    let totalLitres = 0;
+    logs.forEach(log => {
+        totalAmount += parseFloat(log.amount);
+        totalLitres += parseFloat(log.litres);
+    });
+    const avgPrice = (totalAmount / totalLitres).toFixed(2);
+    document.getElementById('totals').innerHTML = `
+        Συνολικά €: ${totalAmount.toFixed(2)}<br>
+        Συνολικά Λίτρα: ${totalLitres.toFixed(2)}<br>
+        Μέση Τιμή/L: €${isNaN(avgPrice) ? '0.00' : avgPrice}
+    `;
+}
+
+function displayRecentLogs() {
+    const logs = JSON.parse(localStorage.getItem('fuelLogs')) || [];
+    const recent = logs.slice(-5).reverse();
+    const ul = document.getElementById('recentLogs');
+    ul.innerHTML = '';
+    recent.forEach(log => {
+        const li = document.createElement('li');
+        li.textContent = `${log.date} - ${log.vehicle} - €${log.amount}`;
+        ul.appendChild(li);
+    });
+}
+
 window.onload = () => {
     displayVehicles();
     populateVehicleSelect();
     displayLogs();
+    displayTotals();
+    displayRecentLogs();
 };
