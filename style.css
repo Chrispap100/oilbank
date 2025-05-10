@@ -1,6 +1,18 @@
+
 body {
     font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    padding: 2rem;
     text-align: center;
+    padding: 2rem;
+    background: #f0f0f0;
+}
+form input, form button {
+    display: block;
+    margin: 0.5rem auto;
+    padding: 0.5rem;
+    width: 80%;
+    max-width: 300px;
+}
+ul {
+    list-style-type: none;
+    padding: 0;
 }

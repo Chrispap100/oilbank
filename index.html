@@ -1,14 +1,22 @@
+
 <!DOCTYPE html>
 <html lang="el">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OilBank</title>
+    <title>OilBank Light</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Καλώς ήρθες στο OilBank</h1>
-    <p>Η εφαρμογή σου για την καταγραφή καυσίμων είναι έτοιμη!</p>
+    <h1>OilBank Light</h1>
+    <form id="fuelForm">
+        <input type="text" id="vehicle" placeholder="Όχημα" required>
+        <input type="number" id="amount" placeholder="Ποσό (€)" required>
+        <input type="number" id="price" placeholder="Τιμή ανά λίτρο (€)" step="0.01" required>
+        <input type="date" id="date" required>
+        <button type="submit">Καταχώρηση</button>
+    </form>
+    <h2>Καταγραφές</h2>
+    <ul id="logList"></ul>
     <script src="script.js"></script>
 </body>
 </html>
