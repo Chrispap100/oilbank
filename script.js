@@ -1,1 +1,1 @@
-console.log('OilBank Ultimate loading...');
+console.log('OilBank Ultimate is loading...');
