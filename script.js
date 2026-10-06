@@ -7,7 +7,7 @@ const $$=s=>Array.from(document.querySelectorAll(s));
 const money=n=>new Intl.NumberFormat("el-GR",{style:"currency",currency:"EUR"}).format(Number(n)||0);
 const num=(n,d=2)=>new Intl.NumberFormat("el-GR",{minimumFractionDigits:d,maximumFractionDigits:d}).format(Number(n)||0);
 const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2);
-const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;","'":"&#039;"}[m]));
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
 const today=()=>new Date().toISOString().slice(0,10);
 function defaultDB(){return{version:2,vehicles:[],logs:[]}}
 function normalizeDB(db){
@@ -88,7 +88,7 @@ function renderVehicles(){
   if(!db.vehicles.length){box.className="vehicle-list empty-state";box.textContent="Δεν έχεις προσθέσει όχημα.";return}
   box.className="vehicle-list";box.innerHTML=db.vehicles.map(v=>{
     const s=vehicleStats(v.id);
-    return '<div class="vehicle-card"><div class="vehicle-top"><div><strong>'+esc(v.plate)+'</strong><br><small>'+esc(v.model)+(v.year?(" · "+esc(v.year)):"")+' · '+esc(v.fuel)+'</small></div><div class="vehicle-actions"><button class="icon-btn dangerish" onclick="deleteVehicle(\\''+v.id+'\\')">Διαγραφή</button></div></div><div class="metric-row"><span>'+s.entries+' ανεφοδιασμοί</span><span>'+money(s.spend)+'</span><span>'+num(s.litres)+' L</span><span>'+(s.maxOdo?num(s.maxOdo,0)+" km":"—")+'</span></div></div>';
+    return '<div class="vehicle-card"><div class="vehicle-top"><div><strong>'+esc(v.plate)+'</strong><br><small>'+esc(v.model)+(v.year?(" · "+esc(v.year)):"")+' · '+esc(v.fuel)+'</small></div><div class="vehicle-actions"><button class="icon-btn dangerish" onclick="deleteVehicle(\''+v.id+'\')">Διαγραφή</button></div></div><div class="metric-row"><span>'+s.entries+' ανεφοδιασμοί</span><span>'+money(s.spend)+'</span><span>'+num(s.litres)+' L</span><span>'+(s.maxOdo?num(s.maxOdo,0)+" km":"—")+'</span></div></div>';
   }).join("");
 }
 function populateVehicleSelects(){
@@ -119,7 +119,7 @@ function renderHistory(){
   const logs=sortedLogs().filter(l=>(!filterV||l.vehicleId===filterV)&&(!q||(String(l.station||"")+" "+String(l.notes||"")+" "+String(l.vehiclePlate||"")).toLowerCase().includes(q)));
   empty.style.display=logs.length?"none":"block";
   tbody.innerHTML=logs.map(l=>{const c=calcConsumptionForLog(l),v=getVehicle(l.vehicleId);
-    return "<tr><td>"+esc(l.date)+"</td><td><strong>"+esc(v?v.plate:(l.vehiclePlate||"—"))+"</strong><br><span class=\\"muted\\">"+esc(v?v.model:"")+"</span></td><td>"+(l.odometer?num(l.odometer,0):"—")+"</td><td>"+num(l.litres)+" L</td><td>"+money(l.price)+"</td><td>"+money(l.amount)+"</td><td class=\\""+(c?"positive":"muted")+"\\">"+(c?num(c.consumption)+" L":"—")+"</td><td class=\\""+(c?"positive":"muted")+"\\">"+(c?money(c.costPerKm):"—")+"</td><td><button class=\\"icon-btn dangerish\\" onclick=\\"deleteLog('"+l.id+"')\\">×</button></td></tr>";
+    return "<tr><td>"+esc(l.date)+"</td><td><strong>"+esc(v?v.plate:(l.vehiclePlate||"—"))+"</strong><br><span class=\"muted\">"+esc(v?v.model:"")+"</span></td><td>"+(l.odometer?num(l.odometer,0):"—")+"</td><td>"+num(l.litres)+" L</td><td>"+money(l.price)+"</td><td>"+money(l.amount)+"</td><td class=\""+(c?"positive":"muted")+"\">"+(c?num(c.consumption)+" L":"—")+"</td><td class=\""+(c?"positive":"muted")+"\">"+(c?money(c.costPerKm):"—")+"</td><td><button class=\"icon-btn dangerish\" onclick=\"deleteLog('"+l.id+"')\">×</button></td></tr>";
   }).join("");
 }
 $("#filterVehicle").addEventListener("change",renderHistory);$("#filterSearch").addEventListener("input",renderHistory);
