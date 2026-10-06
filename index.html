@@ -1,12 +1,183 @@
-
 <!DOCTYPE html>
 <html lang="el">
 <head>
-    <meta charset="UTF-8">
-    <title>OilBank Ultimate</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>OilBank</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <h1>Η τελική έκδοση φορτώνεται...</h1>
-    <p>Αυτό είναι δοκιμαστικό placeholder για το τελικό αρχείο. Η λειτουργική έκδοση έρχεται.</p>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">OB</div>
+        <div><strong>OilBank</strong><span>Fuel & Vehicle Manager</span></div>
+      </div>
+      <nav>
+        <button class="nav-btn active" data-view="dashboard">⌂ <span>Αρχική</span></button>
+        <button class="nav-btn" data-view="fuel">⛽ <span>Ανεφοδιασμός</span></button>
+        <button class="nav-btn" data-view="vehicles">🚗 <span>Οχήματα</span></button>
+        <button class="nav-btn" data-view="history">☷ <span>Ιστορικό</span></button>
+        <button class="nav-btn" data-view="data">⇅ <span>Δεδομένα</span></button>
+      </nav>
+      <div class="sidebar-foot">Τα δεδομένα αποθηκεύονται τοπικά στη συσκευή σου.</div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Ο προσωπικός σου διαχειριστής καυσίμων</p>
+          <h1 id="pageTitle">Dashboard</h1>
+        </div>
+        <button id="quickAdd" class="primary">+ Νέος ανεφοδιασμός</button>
+      </header>
+
+      <section id="dashboard" class="view active">
+        <div class="hero">
+          <div>
+            <span class="pill">OilBank Smart</span>
+            <h2>Ξέρεις ακριβώς τι καίει κάθε όχημά σου.</h2>
+            <p>Παρακολούθησε κόστος, λίτρα, πραγματική κατανάλωση, χιλιόμετρα και τάσεις χωρίς πρόχειρους πίνακες.</p>
+          </div>
+          <div class="hero-kpi">
+            <span>Συνολικό κόστος</span>
+            <strong id="heroCost">€0,00</strong>
+            <small id="heroSub">Δεν υπάρχουν ακόμη καταχωρήσεις</small>
+          </div>
+        </div>
+
+        <div class="cards">
+          <article class="stat-card"><span>Σύνολο εξόδων</span><strong id="totalSpend">€0,00</strong><small id="spendTrend">Όλων των καταχωρήσεων</small></article>
+          <article class="stat-card"><span>Σύνολο λίτρων</span><strong id="totalLitres">0,00 L</strong><small>Με βάση ποσό και τιμή/L</small></article>
+          <article class="stat-card"><span>Μέση τιμή</span><strong id="avgPrice">€0,000/L</strong><small>Σταθμισμένη μέση τιμή</small></article>
+          <article class="stat-card"><span>Μέση κατανάλωση</span><strong id="avgConsumption">—</strong><small>Από γεμάτα ρεζερβουάρ</small></article>
+        </div>
+
+        <div class="grid-2">
+          <article class="panel">
+            <div class="panel-head"><div><h3>Έξοδα τελευταίων 6 μηνών</h3><p>Μηνιαία εικόνα κόστους</p></div></div>
+            <div class="chart-wrap"><canvas id="costChart" width="800" height="280"></canvas></div>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><div><h3>Ανά όχημα</h3><p>Κόστος και κατανάλωση</p></div></div>
+            <div id="vehicleSummary" class="vehicle-summary empty-state">Πρόσθεσε το πρώτο σου όχημα.</div>
+          </article>
+        </div>
+
+        <article class="panel">
+          <div class="panel-head"><div><h3>Πρόσφατες κινήσεις</h3><p>Οι τελευταίοι ανεφοδιασμοί</p></div><button class="link-btn" data-jump="history">Όλο το ιστορικό →</button></div>
+          <div id="recentList" class="recent-list empty-state">Δεν υπάρχουν καταχωρήσεις ακόμη.</div>
+        </article>
+      </section>
+
+      <section id="fuel" class="view">
+        <div class="section-grid">
+          <article class="panel form-panel">
+            <div class="panel-head"><div><h3>Νέος ανεφοδιασμός</h3><p>Κατέγραψε ό,τι χρειάζεται για σωστή κατανάλωση.</p></div></div>
+            <form id="fuelForm" class="smart-form">
+              <label>Όχημα<select id="vehicleSelect" required></select></label>
+              <div class="form-row">
+                <label>Ημερομηνία<input type="date" id="date" required /></label>
+                <label>Οδόμετρο (km)<input type="number" id="odometer" min="0" step="1" placeholder="π.χ. 84520" required /></label>
+              </div>
+              <div class="form-row">
+                <label>Ποσό (€)<input type="number" id="amount" min="0.01" step="0.01" placeholder="60,00" required /></label>
+                <label>Τιμή / λίτρο (€)<input type="number" id="price" min="0.001" step="0.001" placeholder="1,749" required /></label>
+              </div>
+              <div class="form-row">
+                <label>Πρατήριο<input type="text" id="station" placeholder="π.χ. Shell Νάουσα" /></label>
+                <label>Τύπος πληρωμής<select id="payment"><option>Κάρτα</option><option>Μετρητά</option><option>Εταιρική κάρτα</option><option>Άλλο</option></select></label>
+              </div>
+              <label class="check"><input type="checkbox" id="fullTank" checked /><span><strong>Γεμάτο ρεζερβουάρ</strong><small>Χρειάζεται για αξιόπιστη μέτρηση L/100km</small></span></label>
+              <label>Σημειώσεις<textarea id="notes" rows="3" placeholder="Προαιρετικά"></textarea></label>
+              <div id="liveCalc" class="calc-box">Συμπλήρωσε ποσό και τιμή για υπολογισμό λίτρων.</div>
+              <button class="primary wide" type="submit">Αποθήκευση ανεφοδιασμού</button>
+            </form>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><div><h3>Τι υπολογίζει το OilBank</h3><p>Αυτόματα σε κάθε καταχώρηση</p></div></div>
+            <div class="feature-list">
+              <div><b>Λίτρα</b><span>Ποσό ÷ τιμή ανά λίτρο</span></div>
+              <div><b>Καθαρή αξία & ΦΠΑ</b><span>Σωστός διαχωρισμός από τελική τιμή με ΦΠΑ</span></div>
+              <div><b>Κατανάλωση</b><span>L/100km μεταξύ διαδοχικών γεμάτων</span></div>
+              <div><b>Κόστος / km</b><span>Πραγματικό κόστος διαδρομής</span></div>
+              <div><b>Μηνιαίες τάσεις</b><span>Έξοδα και συχνότητα ανεφοδιασμών</span></div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="vehicles" class="view">
+        <div class="section-grid">
+          <article class="panel form-panel">
+            <div class="panel-head"><div><h3>Προσθήκη οχήματος</h3><p>Κράτα ξεχωριστά στοιχεία και στατιστικά.</p></div></div>
+            <form id="vehicleForm" class="smart-form">
+              <div class="form-row">
+                <label>Πινακίδα<input id="plate" required placeholder="ΝΚΑ-1234" /></label>
+                <label>Μάρκα / Μοντέλο<input id="model" required placeholder="Ford Transit Courier" /></label>
+              </div>
+              <div class="form-row">
+                <label>Καύσιμο<select id="fuelKind"><option>Πετρέλαιο</option><option>Βενζίνη</option><option>LPG</option><option>Υβριδικό</option></select></label>
+                <label>Έτος<input id="year" type="number" min="1950" max="2100" placeholder="2026" /></label>
+              </div>
+              <label>Αρχικό οδόμετρο (km)<input id="startOdo" type="number" min="0" step="1" placeholder="0" /></label>
+              <button class="primary wide" type="submit">Προσθήκη οχήματος</button>
+            </form>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><div><h3>Τα οχήματά μου</h3><p>Διαχείριση και συνοπτικά στοιχεία</p></div></div>
+            <div id="vehicleList" class="vehicle-list empty-state">Δεν έχεις προσθέσει όχημα.</div>
+          </article>
+        </div>
+      </section>
+
+      <section id="history" class="view">
+        <article class="panel">
+          <div class="panel-head history-head">
+            <div><h3>Ιστορικό ανεφοδιασμών</h3><p>Αναζήτηση, φίλτρα και πλήρης εικόνα.</p></div>
+            <div class="filters">
+              <select id="filterVehicle"><option value="">Όλα τα οχήματα</option></select>
+              <input id="filterSearch" type="search" placeholder="Πρατήριο / σημείωση" />
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table id="logTable">
+              <thead><tr><th>Ημερομηνία</th><th>Όχημα</th><th>km</th><th>Λίτρα</th><th>Τιμή/L</th><th>Ποσό</th><th>L/100km</th><th>Κόστος/km</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div id="historyEmpty" class="empty-state">Δεν υπάρχουν καταχωρήσεις.</div>
+        </article>
+      </section>
+
+      <section id="data" class="view">
+        <div class="section-grid">
+          <article class="panel">
+            <div class="panel-head"><div><h3>Backup & μεταφορά</h3><p>Πάρε αντίγραφο όλων των δεδομένων σου.</p></div></div>
+            <div class="action-stack">
+              <button id="exportJson" class="secondary">Εξαγωγή πλήρους backup (.json)</button>
+              <button id="exportCsv" class="secondary">Εξαγωγή ανεφοδιασμών (.csv)</button>
+              <label class="file-btn">Εισαγωγή backup<input id="importJson" type="file" accept=".json,application/json" hidden /></label>
+            </div>
+          </article>
+          <article class="panel danger-panel">
+            <div class="panel-head"><div><h3>Διαχείριση δεδομένων</h3><p>Προσοχή: οι ενέργειες μπορεί να είναι οριστικές.</p></div></div>
+            <button id="clearAll" class="danger">Διαγραφή όλων των δεδομένων</button>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <div id="modal" class="modal" aria-hidden="true">
+    <div class="modal-card">
+      <h3>Επιβεβαίωση</h3><p id="modalText"></p>
+      <div class="modal-actions"><button id="modalCancel" class="secondary">Άκυρο</button><button id="modalConfirm" class="danger">Συνέχεια</button></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>
