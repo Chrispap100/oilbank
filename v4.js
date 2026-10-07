@@ -107,10 +107,10 @@ async function imageDataV4(file){
   r.onload=function(){
    const img=new Image();
    img.onload=function(){
-    const max=1800,scale=Math.min(1,max/Math.max(img.width,img.height)),w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale));
+    const max=1200,scale=Math.min(1,max/Math.max(img.width,img.height)),w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale));
     const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
     const ctx=canvas.getContext("2d");ctx.drawImage(img,0,0,w,h);
-    resolve(canvas.toDataURL("image/jpeg",0.82));
+    resolve(canvas.toDataURL("image/jpeg",0.72));
    };
    img.onerror=reject;img.src=r.result;
   };
