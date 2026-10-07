@@ -10,9 +10,14 @@ async function api(path,options={}){
   const headers={"Content-Type":"application/json",...(options.headers||{})};
   if(token)headers.Authorization="Bearer "+token;
   const res=await fetch(path,{...options,headers});
-  const data=await res.json().catch(()=>({}));
+  const raw=await res.text();
+  let data={};try{data=raw?JSON.parse(raw):{}}catch(_){}
   if(res.status===401&&path!=="/api/login"){logout();throw new Error("unauthorized")}
-  if(!res.ok){const e=new Error(data.error||"request_failed");e.code=data.error;e.status=res.status;e.details=data.message||"";e.remoteCode=data.code||"";throw e}
+  if(!res.ok){
+    const fallback="HTTP "+res.status+(raw&&raw.length<240?": "+raw.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim():"");
+    const e=new Error(data.error||fallback||"request_failed");
+    e.code=data.error||"http_"+res.status;e.status=res.status;e.details=data.message||fallback;e.remoteCode=data.code||"";throw e
+  }
   return data;
 }
 function toast(msg){const el=$("#toast");el.textContent=msg;el.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove("show"),2500)}
