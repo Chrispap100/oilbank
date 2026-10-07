@@ -90,12 +90,16 @@ app.get("/api/health",(req,res)=>res.json({ok:true}));
 app.post("/api/login",async(req,res)=>{
   try{
     const email=cleanEmail(req.body.email),password=String(req.body.password||"");
+    const emailTag=crypto.createHash("sha256").update(email).digest("hex").slice(0,10);
     const q=await pool.query("SELECT * FROM users WHERE email=$1",[email]);
-    if(!q.rowCount||!q.rows[0].active)return res.status(401).json({error:"invalid_credentials"});
+    if(!q.rowCount){console.log("LOGIN_FAIL user_not_found",emailTag);return res.status(401).json({error:"invalid_credentials"})}
     const u=q.rows[0];
-    if(!(await bcrypt.compare(password,u.password_hash)))return res.status(401).json({error:"invalid_credentials"});
+    if(!u.active){console.log("LOGIN_FAIL inactive",emailTag);return res.status(401).json({error:"invalid_credentials"})}
+    const ok=await bcrypt.compare(password,u.password_hash);
+    if(!ok){console.log("LOGIN_FAIL password_mismatch",emailTag);return res.status(401).json({error:"invalid_credentials"})}
+    console.log("LOGIN_OK",emailTag,String(u.id),u.role);
     res.json({token:sign(u),user:mapUser(u)});
-  }catch(e){console.error(e);res.status(500).json({error:"server_error"})}
+  }catch(e){console.error("LOGIN_ERROR",e);res.status(500).json({error:"server_error"})}
 });
 
 app.get("/api/me",auth,async(req,res)=>{
