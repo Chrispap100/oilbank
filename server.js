@@ -253,4 +253,24 @@ app.post("/api/backup/restore",auth,admin,async(req,res)=>{
 
 app.get("*",(req,res)=>res.sendFile(path.join(__dirname,"index.html")));
 
-initDb().then(ensureV4).then(()=>app.listen(PORT,"0.0.0.0",()=>console.log("OilBank listening on "+PORT))).catch(e=>{console.error("DB init failed",e);process.exit(1)});
+
+async function runOneTimeFuelImport(){
+  const raw=process.env.ONE_TIME_FUEL_IMPORT;
+  if(!raw)return;
+  let x;try{x=JSON.parse(raw)}catch(e){console.error("ONE_TIME_FUEL_IMPORT invalid JSON");return}
+  const norm=s=>String(s||"").replace(/[^A-ZΑ-Ω0-9]/gi,"").toUpperCase();
+  const vq=await pool.query("SELECT * FROM vehicles ORDER BY id");
+  const v=vq.rows.find(r=>norm(r.plate)===norm(x.plate));
+  if(!v){console.error("ONE_TIME_FUEL_IMPORT vehicle not found",norm(x.plate));return}
+  const dup=await pool.query("SELECT id FROM fuel_logs WHERE vehicle_id=$1 AND date=$2 AND amount=$3 AND COALESCE(reference_no,'')=$4 LIMIT 1",[v.id,x.date,Number(x.amount),String(x.referenceNo||"")]);
+  if(dup.rowCount){console.log("ONE_TIME_FUEL_IMPORT already exists",dup.rows[0].id);return}
+  const creator=await pool.query("SELECT id FROM users WHERE role='super_admin' AND active=TRUE ORDER BY id LIMIT 1");
+  const createdBy=creator.rowCount?creator.rows[0].id:v.user_id;
+  const q=await pool.query(`INSERT INTO fuel_logs(user_id,vehicle_id,created_by,date,odometer,amount,price,litres,station,payment,full_tank,notes,product,reference_no,net_amount,vat_rate,vat_amount)
+    VALUES($1,$2,$3,$4,0,$5,$6,$7,$8,'',FALSE,$9,$10,$11,$12,$13,$14) RETURNING id`,
+    [v.user_id,v.id,createdBy,x.date,Number(x.amount),Number(x.pricePerLitre),Number(x.litres),String(x.provider||""),String(x.notes||"Καταχώριση από παραστατικό"),String(x.product||""),String(x.referenceNo||""),x.netAmount==null?null:Number(x.netAmount),x.vatRate==null?null:Number(x.vatRate),x.vatAmount==null?null:Number(x.vatAmount)]);
+  await auditV4(createdBy,"one_time_fuel_import","fuel_log",q.rows[0].id,{plate:v.plate,referenceNo:String(x.referenceNo||"")});
+  console.log("ONE_TIME_FUEL_IMPORT inserted",q.rows[0].id);
+}
+
+initDb().then(ensureV4).then(runOneTimeFuelImport).then(()=>app.listen(PORT,"0.0.0.0",()=>console.log("OilBank listening on "+PORT))).catch(e=>{console.error("DB init failed",e);process.exit(1)});
