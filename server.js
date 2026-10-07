@@ -212,6 +212,37 @@ app.post("/api/documents/:id/confirm",auth,async(req,res)=>{const cl=await pool.
 app.get("/api/documents",auth,async(req,res)=>{const a=req.user.role==="super_admin",sql="SELECT d.id,d.user_id,d.vehicle_id,d.uploaded_by,d.filename,d.mime_type,d.sha256,d.doc_type,d.ai_status,d.ai_json,d.confirmed,d.created_at,v.plate,u.name owner_name FROM documents d LEFT JOIN vehicles v ON v.id=d.vehicle_id JOIN users u ON u.id=d.user_id "+(a?"":"WHERE d.user_id=$1 ")+"ORDER BY d.created_at DESC LIMIT 200",q=await pool.query(sql,a?[]:[req.user.id]);res.json({documents:q.rows.map(r=>Object.assign({},r,{id:String(r.id),user_id:String(r.user_id),vehicle_id:r.vehicle_id?String(r.vehicle_id):null,uploaded_by:String(r.uploaded_by)}))})});
 app.get("/api/documents/:id/file",auth,async(req,res)=>{const q=await pool.query("SELECT * FROM documents WHERE id=$1",[req.params.id]);if(!q.rowCount)return res.status(404).end();const d=q.rows[0];if(req.user.role!=="super_admin"&&String(d.user_id)!==String(req.user.id))return res.status(403).end();res.setHeader("Content-Type",d.mime_type);res.send(d.file_bytes)});
 
+
+app.post("/api/backup/restore",auth,admin,async(req,res)=>{
+  const b=req.body||{};
+  if(!Array.isArray(b.users)||!Array.isArray(b.vehicles)||!Array.isArray(b.fuelLogs)||!Array.isArray(b.expenses)||!Array.isArray(b.obligations)) return res.status(400).json({error:"invalid_backup"});
+  const cl=await pool.connect();
+  try{
+    await cl.query("BEGIN");
+    await cl.query("CREATE TEMP TABLE restore_guard(x INT)");
+    for(const v of b.vehicles){
+      if(!v.id||!v.user_id||!v.plate||!v.model||!v.fuel) continue;
+      await cl.query("INSERT INTO vehicles(id,user_id,plate,model,fuel,year,start_odo,status,purchase_date,purchase_price,sale_date,sale_price,notes,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,COALESCE($14,NOW())) ON CONFLICT(id) DO UPDATE SET user_id=EXCLUDED.user_id,plate=EXCLUDED.plate,model=EXCLUDED.model,fuel=EXCLUDED.fuel,year=EXCLUDED.year,start_odo=EXCLUDED.start_odo,status=EXCLUDED.status,purchase_date=EXCLUDED.purchase_date,purchase_price=EXCLUDED.purchase_price,sale_date=EXCLUDED.sale_date,sale_price=EXCLUDED.sale_price,notes=EXCLUDED.notes",[v.id,v.user_id,v.plate,v.model,v.fuel,v.year||null,v.start_odo||0,v.status||"active",v.purchase_date||null,v.purchase_price||null,v.sale_date||null,v.sale_price||null,v.notes||"",v.created_at||null]);
+    }
+    for(const x of b.fuelLogs){
+      if(!x.id||!x.user_id||!x.vehicle_id||!x.created_by||!x.date) continue;
+      await cl.query("INSERT INTO fuel_logs(id,user_id,vehicle_id,created_by,date,odometer,amount,price,litres,station,payment,full_tank,notes,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,COALESCE($14,NOW())) ON CONFLICT(id) DO NOTHING",[x.id,x.user_id,x.vehicle_id,x.created_by,x.date,x.odometer||0,x.amount||0,x.price||0,x.litres||0,x.station||"",x.payment||"",x.full_tank!==false,x.notes||"",x.created_at||null]);
+    }
+    for(const x of b.expenses){
+      if(!x.id||!x.user_id||!x.vehicle_id||!x.created_by||!x.date) continue;
+      await cl.query("INSERT INTO expenses(id,user_id,vehicle_id,created_by,category,date,amount,odometer,title,vendor,next_due_date,next_due_odometer,notes,document_id,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,COALESCE($15,NOW()),COALESCE($16,NOW())) ON CONFLICT(id) DO NOTHING",[x.id,x.user_id,x.vehicle_id,x.created_by,x.category||"other",x.date,x.amount||0,x.odometer||null,x.title||"",x.vendor||"",x.next_due_date||null,x.next_due_odometer||null,x.notes||"",x.document_id||null,x.created_at||null,x.updated_at||null]);
+    }
+    for(const x of b.obligations){
+      if(!x.id||!x.user_id||!x.vehicle_id||!x.created_by) continue;
+      await cl.query("INSERT INTO obligations(id,user_id,vehicle_id,created_by,type,title,start_date,due_date,amount,provider,reference_no,paid,notes,document_id,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,COALESCE($15,NOW()),COALESCE($16,NOW())) ON CONFLICT(id) DO NOTHING",[x.id,x.user_id,x.vehicle_id,x.created_by,x.type||"other",x.title||"",x.start_date||null,x.due_date||null,x.amount||0,x.provider||"",x.reference_no||"",!!x.paid,x.notes||"",x.document_id||null,x.created_at||null,x.updated_at||null]);
+    }
+    await cl.query("COMMIT");
+    await auditV4(req.user.id,"backup_restored","system",null,{vehicles:b.vehicles.length,fuelLogs:b.fuelLogs.length,expenses:b.expenses.length,obligations:b.obligations.length});
+    res.json({ok:true});
+  }catch(e){try{await cl.query("ROLLBACK")}catch(_){ } console.error(e);res.status(500).json({error:"restore_failed"})}
+  finally{cl.release()}
+});
+
 app.get("*",(req,res)=>res.sendFile(path.join(__dirname,"index.html")));
 
 initDb().then(ensureV4).then(()=>app.listen(PORT,"0.0.0.0",()=>console.log("OilBank listening on "+PORT))).catch(e=>{console.error("DB init failed",e);process.exit(1)});
