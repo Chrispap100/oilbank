@@ -12,7 +12,7 @@ async function api(path,options={}){
   const res=await fetch(path,{...options,headers});
   const data=await res.json().catch(()=>({}));
   if(res.status===401&&path!=="/api/login"){logout();throw new Error("unauthorized")}
-  if(!res.ok){const e=new Error(data.error||"request_failed");e.code=data.error;e.status=res.status;throw e}
+  if(!res.ok){const e=new Error(data.error||"request_failed");e.code=data.error;e.status=res.status;e.details=data.message||"";e.remoteCode=data.code||"";throw e}
   return data;
 }
 function toast(msg){const el=$("#toast");el.textContent=msg;el.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove("show"),2500)}
