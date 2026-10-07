@@ -1,4 +1,4 @@
-let token="";
+let token=localStorage.getItem("oilbank_token")||"";
 let me=null,users=[],vehicles=[],logs=[],pendingConfirm=null;
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const money=n=>new Intl.NumberFormat("el-GR",{style:"currency",currency:"EUR"}).format(Number(n)||0);
@@ -35,12 +35,12 @@ function showApp(){
 async function logout(){try{await fetch("/api/logout",{method:"POST"})}catch(e){}token="";me=null;users=[];vehicles=[];logs=[];localStorage.removeItem("oilbank_token");$("#appShell").classList.add("hidden");$("#loginScreen").classList.remove("hidden")}
 $("#logoutBtn").addEventListener("click",logout);
 
-async function bootstrap(){try{me=(await api("/api/me")).user;await refreshAll();showApp()}catch(e){}}
+async function bootstrap(){if(!token)return;try{me=(await api("/api/me")).user;await refreshAll();showApp()}catch(e){logout()}}
 $("#loginForm").addEventListener("submit",async e=>{
   e.preventDefault();$("#loginError").textContent="";
   try{
     const data=await api("/api/login",{method:"POST",body:JSON.stringify({email:$("#loginEmail").value,password:$("#loginPassword").value})});
-    token="";me=data.user;localStorage.removeItem("oilbank_token");await refreshAll();showApp();
+    token=data.token;me=data.user;localStorage.setItem("oilbank_token",token);await refreshAll();showApp();
   }catch(e){$("#loginError").textContent="Λάθος email ή κωδικός."}
 });
 
