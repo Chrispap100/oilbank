@@ -62,10 +62,13 @@ async function initDb(){
   const adminName=process.env.ADMIN_NAME||"Super Admin";
   if(adminEmail&&adminPassword){
     const existing=await pool.query("SELECT id FROM users WHERE email=$1",[adminEmail]);
+    const hash=await bcrypt.hash(adminPassword,12);
     if(!existing.rowCount){
-      const hash=await bcrypt.hash(adminPassword,12);
-      await pool.query("INSERT INTO users(name,email,password_hash,role) VALUES($1,$2,$3,'super_admin')",[adminName,adminEmail,hash]);
+      await pool.query("INSERT INTO users(name,email,password_hash,role,active) VALUES($1,$2,$3,'super_admin',TRUE)",[adminName,adminEmail,hash]);
       console.log("Initial super admin created");
+    }else{
+      await pool.query("UPDATE users SET name=$2,password_hash=$3,role='super_admin',active=TRUE WHERE email=$1",[adminEmail,adminName,hash]);
+      console.log("Super admin credentials synchronized from environment");
     }
   }
 }
