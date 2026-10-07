@@ -100,7 +100,37 @@ $("#obligationForm")&&$("#obligationForm").addEventListener("submit",async funct
 $("#backupBtn")&&$("#backupBtn").addEventListener("click",async function(){try{const d=await api("/api/backup"),bl=new Blob([JSON.stringify(d,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(bl);a.download="oilbank-backup-"+today()+".json";a.click();setTimeout(function(){URL.revokeObjectURL(a.href)},1000);toast("Το backup δημιουργήθηκε.")}catch(e){toast("Το backup απέτυχε.")}});
 $("#selfDeleteBtn")&&$("#selfDeleteBtn").addEventListener("click",function(){confirmAction("Θα χάσεις την πρόσβαση. Τα δεδομένα σου θα παραμείνουν στον Super Admin. Πάτησε συνέχεια για δεύτερη επιβεβαίωση.",function(){confirmAction("Τελική επιβεβαίωση: να αρχειοθετηθεί ο λογαριασμός σου;",async function(){await api("/api/self/archive",{method:"POST"});logout()})})});
 $("#smartFile")&&$("#smartFile").addEventListener("change",function(e){const f=e.target.files&&e.target.files[0];$("#smartFileName").textContent=f?f.name:""});
-$("#smartAnalyze")&&$("#smartAnalyze").addEventListener("click",function(){const f=$("#smartFile").files&&$("#smartFile").files[0];if(!f)return toast("Διάλεξε φωτογραφία ή PDF.");if(f.size>12*1024*1024)return toast("Μέγιστο 12 MB.");const r=new FileReader();r.onload=async function(){try{$("#smartResult").innerHTML='<div class="calc-box">Γίνεται ανάγνωση με AI...</div>';pendingDocV4=await api("/api/documents/analyze",{method:"POST",body:JSON.stringify({filename:f.name,dataUrl:r.result})});showAiV4(pendingDocV4)}catch(e){const msg=e.details||e.message||"Η ανάλυση απέτυχε.";$("#smartResult").innerHTML='<div class="form-error">'+esc(msg)+"</div>"}};r.readAsDataURL(f)});
+async function imageDataV4(file){
+ if(!file.type||!file.type.startsWith("image/"))return await new Promise(function(resolve,reject){const r=new FileReader();r.onload=function(){resolve(r.result)};r.onerror=reject;r.readAsDataURL(file)});
+ return await new Promise(function(resolve,reject){
+  const r=new FileReader();
+  r.onload=function(){
+   const img=new Image();
+   img.onload=function(){
+    const max=1800,scale=Math.min(1,max/Math.max(img.width,img.height)),w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale));
+    const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
+    const ctx=canvas.getContext("2d");ctx.drawImage(img,0,0,w,h);
+    resolve(canvas.toDataURL("image/jpeg",0.82));
+   };
+   img.onerror=reject;img.src=r.result;
+  };
+  r.onerror=reject;r.readAsDataURL(file);
+ });
+}
+$("#smartAnalyze")&&$("#smartAnalyze").addEventListener("click",async function(){
+ const f=$("#smartFile").files&&$("#smartFile").files[0];
+ if(!f)return toast("Διάλεξε φωτογραφία ή PDF.");
+ if(f.size>12*1024*1024)return toast("Μέγιστο 12 MB.");
+ try{
+  $("#smartResult").innerHTML='<div class="calc-box">Γίνεται ανάγνωση με AI...</div>';
+  const dataUrl=await imageDataV4(f);
+  pendingDocV4=await api("/api/documents/analyze",{method:"POST",body:JSON.stringify({filename:f.name,dataUrl:dataUrl})});
+  showAiV4(pendingDocV4);
+ }catch(e){
+  const msg=e.details||e.message||"Η ανάλυση απέτυχε.";
+  $("#smartResult").innerHTML='<div class="form-error">'+esc(msg)+"</div>";
+ }
+});
 function showAiV4(d){
  const x=d.extraction||{},du=d.duplicate?'<div class="warning-box">Πιθανό διπλότυπο: '+esc(d.duplicate.filename)+(d.duplicate.plate?" · "+esc(d.duplicate.plate):"")+"</div>":"";
  $("#smartResult").innerHTML=du+'<div class="smart-review"><label>Τύπος<select id="aiType"><option value="fuel">Καύσιμα</option><option value="insurance">Ασφάλεια</option><option value="kteo">ΚΤΕΟ</option><option value="emissions">Κάρτα Καυσαερίων</option><option value="road_tax">Τέλη Κυκλοφορίας</option><option value="service">Service</option><option value="repair">Επισκευή</option><option value="tires">Ελαστικά</option><option value="battery">Μπαταρία</option><option value="other">Άλλο</option></select></label><label>Όχημα<select id="aiVehicle"></select></label><div class="form-row"><label>Ημερομηνία<input id="aiDate" type="date"></label><label>Λήξη<input id="aiDue" type="date"></label></div><div class="form-row"><label>Ποσό<input id="aiAmount" type="number" step="0.01"></label><label>Οδόμετρο<input id="aiOdo" type="number"></label></div><div class="form-row"><label>Λίτρα<input id="aiLitres" type="number" step="0.001"></label><label>Τιμή/L<input id="aiPrice" type="number" step="0.001"></label></div><label>Εταιρεία / Πρατήριο<input id="aiProvider"></label><label>Αριθμός αναφοράς<input id="aiRef"></label><label>Τίτλος<input id="aiTitle"></label><label>Σημειώσεις<textarea id="aiNotes"></textarea></label><button id="aiConfirm" class="primary wide" type="button">Επιβεβαίωση & Καταχώριση</button></div>';
