@@ -112,4 +112,35 @@ async function confirmAiV4(){
  try{await api("/api/documents/"+pendingDocV4.documentId+"/confirm",{method:"POST",body:JSON.stringify({extraction:x})});pendingDocV4=null;$("#smartResult").innerHTML='<div class="attention-ok">✓ Το έγγραφο καταχωρίστηκε και επιβεβαιώθηκε.</div>';$("#smartFile").value="";$("#smartFileName").textContent="";await refreshAll();toast("Η καταχώριση ολοκληρώθηκε.")}catch(e){toast("Έλεγξε τα στοιχεία πριν την καταχώριση.")}
 }
 if($("#expenseDate"))$("#expenseDate").value=today();
-setInterval(function(){if(token)refreshAll().catch(function(){})},30000);
+setInterval(function(){if((token||me)&&navigator.onLine)refreshAll().catch(function(){})},5000);
+
+
+function updateNetV4(){
+  const s=$("#syncStatus");if(!s)return;
+  s.textContent=navigator.onLine?"• Online":"• Offline";
+  s.style.color=navigator.onLine?"#86efac":"#fbbf24";
+}
+window.addEventListener("online",function(){updateNetV4();if(token||me)refreshAll().catch(function(){})});
+window.addEventListener("offline",updateNetV4);
+document.addEventListener("visibilitychange",function(){if(!document.hidden&&(token||me)&&navigator.onLine)refreshAll().catch(function(){})});
+updateNetV4();
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load",function(){navigator.serviceWorker.register("/sw.js").catch(function(){})});
+}
+
+$("#restoreFile")&&$("#restoreFile").addEventListener("change",function(e){
+  const f=e.target.files&&e.target.files[0];if(!f)return;
+  confirmAction("Η επαναφορά θα προσθέσει/επαναφέρει δεδομένα από το backup. Συνέχεια;",function(){
+    const r=new FileReader();
+    r.onload=async function(){
+      try{
+        const data=JSON.parse(r.result);
+        await api("/api/backup/restore",{method:"POST",body:JSON.stringify(data)});
+        await refreshAll();toast("Το backup επαναφέρθηκε.");
+      }catch(err){toast("Η επαναφορά απέτυχε. Έλεγξε το αρχείο backup.")}
+      e.target.value="";
+    };
+    r.readAsText(f);
+  });
+});
