@@ -38,10 +38,23 @@ $("#logoutBtn").addEventListener("click",logout);
 async function bootstrap(){if(!token)return;try{me=(await api("/api/me")).user;await refreshAll();showApp()}catch(e){logout()}}
 $("#loginForm").addEventListener("submit",async e=>{
   e.preventDefault();$("#loginError").textContent="";
+  let data;
   try{
-    const data=await api("/api/login",{method:"POST",body:JSON.stringify({email:$("#loginEmail").value,password:$("#loginPassword").value})});
-    token=data.token;me=data.user;localStorage.setItem("oilbank_token",token);await refreshAll();showApp();
-  }catch(e){$("#loginError").textContent="Λάθος email ή κωδικός."}
+    data=await api("/api/login",{method:"POST",body:JSON.stringify({email:$("#loginEmail").value.trim(),password:$("#loginPassword").value})});
+  }catch(err){
+    $("#loginError").textContent=err.code==="invalid_credentials"?"Λάθος email ή κωδικός.":err.code==="account_inactive"?"Ο λογαριασμός είναι ανενεργός.":"Δεν ολοκληρώθηκε η σύνδεση.";
+    return;
+  }
+  token=data.token;me=data.user;localStorage.setItem("oilbank_token",token);
+  try{
+    await refreshAll();
+    showApp();
+  }catch(err){
+    console.error("Post-login load failed",err);
+    showApp();
+    $("#loginError").textContent="";
+    toast("Η σύνδεση έγινε, αλλά κάποια δεδομένα δεν φορτώθηκαν. Γίνεται έλεγχος.");
+  }
 });
 
 async function refreshAll(){
