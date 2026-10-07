@@ -14,6 +14,7 @@ if(!DATABASE_URL) console.error("DATABASE_URL is not configured");
 const pool=new Pool({connectionString:DATABASE_URL,ssl:DATABASE_URL&&DATABASE_URL.includes("localhost")?false:{rejectUnauthorized:false}});
 app.use(express.json({limit:"18mb"}));
 app.use(express.static(path.join(__dirname)));
+app.use((err,req,res,next)=>{if(err&&err.type==="entity.too.large"){console.error("UPLOAD_TOO_LARGE",err.length||0);return res.status(413).json({error:"file_too_large",message:"Το αρχείο είναι πολύ μεγάλο. Δοκίμασε μικρότερη φωτογραφία."})}next(err)});
 
 async function initDb(){
   await pool.query(`
