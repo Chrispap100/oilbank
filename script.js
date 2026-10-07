@@ -1,4 +1,4 @@
-let token=localStorage.getItem("oilbank_token")||"";
+let token="";
 let me=null,users=[],vehicles=[],logs=[],pendingConfirm=null;
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const money=n=>new Intl.NumberFormat("el-GR",{style:"currency",currency:"EUR"}).format(Number(n)||0);
@@ -28,22 +28,19 @@ function showApp(){
   $("#userRoleLabel").textContent=isAdmin()?"Super Admin":"User";
   $("#heroTitle").textContent=isAdmin()?"Όλη η εικόνα του OilBank σε ένα σημείο.":"Η εικόνα του δικού σου οχήματος, παντού.";
   $("#heroText").textContent=isAdmin()?"Βλέπεις όλους τους χρήστες, όλα τα οχήματα και όλες τις κινήσεις.":"Βλέπεις μόνο τα δικά σου οχήματα και τις δικές σου κινήσεις.";
-  $("#permissionText").textContent=isAdmin()?"Μπορείς να γράψεις κίνηση για οποιοδήποτε όχημα.":"Μπορείς να γράψεις μόνο για τα δικά σου οχήματα.";
-  $("#vehicleListSubtitle").textContent=isAdmin()?"Όλα τα οχήματα όλων των χρηστών":"Μόνο τα δικά σου οχήματα";
-  $("#historySubtitle").textContent=isAdmin()?"Όλες οι κινήσεις όλων των χρηστών":"Μόνο οι δικές σου κινήσεις";
+  if($("#permissionText"))$("#permissionText").textContent=isAdmin()?"Μπορείς να γράψεις κίνηση για οποιοδήποτε όχημα.":"Μπορείς να γράψεις μόνο για τα δικά σου οχήματα.";
+  if($("#vehicleListSubtitle"))$("#vehicleListSubtitle").textContent=isAdmin()?"Όλα τα οχήματα όλων των χρηστών":"Μόνο τα δικά σου οχήματα";
+  if($("#historySubtitle"))$("#historySubtitle").textContent=isAdmin()?"Όλες οι κινήσεις όλων των χρηστών":"Μόνο οι δικές σου κινήσεις";
 }
-function logout(){token="";me=null;users=[];vehicles=[];logs=[];localStorage.removeItem("oilbank_token");$("#appShell").classList.add("hidden");$("#loginScreen").classList.remove("hidden")}
+async function logout(){try{await fetch("/api/logout",{method:"POST"})}catch(e){}token="";me=null;users=[];vehicles=[];logs=[];localStorage.removeItem("oilbank_token");$("#appShell").classList.add("hidden");$("#loginScreen").classList.remove("hidden")}
 $("#logoutBtn").addEventListener("click",logout);
 
-async function bootstrap(){
-  if(!token)return;
-  try{me=(await api("/api/me")).user;await refreshAll();showApp()}catch(e){logout()}
-}
+async function bootstrap(){try{me=(await api("/api/me")).user;await refreshAll();showApp()}catch(e){}}
 $("#loginForm").addEventListener("submit",async e=>{
   e.preventDefault();$("#loginError").textContent="";
   try{
     const data=await api("/api/login",{method:"POST",body:JSON.stringify({email:$("#loginEmail").value,password:$("#loginPassword").value})});
-    token=data.token;me=data.user;localStorage.setItem("oilbank_token",token);await refreshAll();showApp();
+    token="";me=data.user;localStorage.removeItem("oilbank_token");await refreshAll();showApp();
   }catch(e){$("#loginError").textContent="Λάθος email ή κωδικός."}
 });
 
