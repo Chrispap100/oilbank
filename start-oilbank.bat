@@ -30,10 +30,16 @@ if /i "%~1"=="--check" (
   echo Startup prerequisites OK.
   exit /b 0
 )
-if not exist node_modules\express (
+node.exe -e "require.resolve('express');require.resolve('bcryptjs');require.resolve('jsonwebtoken')" >nul 2>nul
+if errorlevel 1 (
   echo Installing application dependencies. Internet is needed only for this step.
   call npm.cmd install
   if errorlevel 1 goto failed
+  node.exe -e "require.resolve('express');require.resolve('bcryptjs');require.resolve('jsonwebtoken')" >nul 2>nul
+  if errorlevel 1 (
+    echo Required application dependencies are still missing.
+    goto failed
+  )
 )
 node.exe --env-file-if-exists=.env scripts/setup.js
 if errorlevel 1 goto failed
