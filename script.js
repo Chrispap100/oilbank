@@ -27,6 +27,7 @@ $("#modalCancel").addEventListener("click",closeModal);
 $("#modalConfirm").addEventListener("click",()=>{const fn=pendingConfirm;closeModal();if(fn)fn()});
 function isAdmin(){return me&&me.role==="super_admin"}
 function showApp(){
+  $("#syncAccount").textContent=me.email;
   $("#loginScreen").classList.add("hidden");$("#appShell").classList.remove("hidden");
   $$(".admin-only").forEach(el=>el.classList.toggle("is-hidden",!isAdmin()));
   $("#signedUser").innerHTML='<div class="user-chip"><strong>'+esc(me.name)+'</strong><span>'+esc(me.email)+'</span></div>';
@@ -97,15 +98,17 @@ function globalStats(){
 }
 
 function populateSelects(){
+  const selectedVehicle=$("#vehicleSelect").value,selectedOwner=$("#vehicleOwner").value;
   $("#vehicleSelect").innerHTML='<option value="">Επίλεξε όχημα</option>'+vehicles.map(v=>'<option value="'+v.id+'">'+esc(v.plate+" · "+v.model+(isAdmin()&&v.ownerName?" · "+v.ownerName:""))+'</option>').join("");
   const cur=$("#filterVehicle").value;$("#filterVehicle").innerHTML='<option value="">Όλα τα οχήματα</option>'+vehicles.map(v=>'<option value="'+v.id+'">'+esc(v.plate+" · "+v.model)+'</option>').join("");$("#filterVehicle").value=cur;
   $("#vehicleOwner").innerHTML=users.filter(u=>u.active).map(u=>'<option value="'+u.id+'">'+esc(u.name+" · "+u.email)+'</option>').join("");
+  $("#vehicleSelect").value=selectedVehicle;if(selectedOwner)$("#vehicleOwner").value=selectedOwner;
 }
 $("#vehicleForm").addEventListener("submit",async e=>{
   e.preventDefault();
   try{
-    await api("/api/vehicles",{method:"POST",body:JSON.stringify({userId:isAdmin()?$("#vehicleOwner").value:undefined,plate:$("#plate").value,model:$("#model").value,fuel:$("#fuelKind").value,year:$("#year").value||null,startOdo:Number($("#startOdo").value)||0})});
-    e.currentTarget.reset();await refreshAll();toast("Το όχημα προστέθηκε.");
+    await api("/api/vehicles",{method:"POST",body:JSON.stringify({userId:isAdmin()?$("#vehicleOwner").value:undefined,plate:$("#plate").value,model:$("#model").value,fuel:$("#fuelKind").value,year:$("#year").value||null,startOdo:Number($("#startOdo").value)||0,status:$("#vehicleStatus").value,purchaseDate:$("#purchaseDate").value||null,purchasePrice:$("#purchasePrice").value?Number($("#purchasePrice").value):null,notes:$("#vehicleNotes").value})});
+    e.target.reset();await refreshAll();toast("Το όχημα προστέθηκε.");
   }catch(err){toast(err.code==="plate_exists"?"Υπάρχει ήδη αυτή η πινακίδα.":"Δεν μπόρεσε να προστεθεί το όχημα.")}
 });
 async function deleteVehicle(id){
@@ -122,7 +125,7 @@ $("#fuelForm").addEventListener("submit",async e=>{
   e.preventDefault();
   try{
     await api("/api/logs",{method:"POST",body:JSON.stringify({vehicleId:$("#vehicleSelect").value,date:$("#date").value,odometer:Number($("#odometer").value),amount:Number($("#amount").value),price:Number($("#price").value),station:$("#station").value,payment:$("#payment").value,fullTank:$("#fullTank").checked,notes:$("#notes").value})});
-    e.currentTarget.reset();$("#date").value=today();$("#fullTank").checked=true;await refreshAll();navigate("dashboard");toast("Η κίνηση αποθηκεύτηκε.");
+    e.target.reset();$("#date").value=today();$("#fullTank").checked=true;await refreshAll();navigate("dashboard");toast("Η κίνηση αποθηκεύτηκε.");
   }catch(err){toast(err.code==="odometer_too_low"?"Τα χιλιόμετρα είναι μικρότερα από προηγούμενη κίνηση.":"Η αποθήκευση απέτυχε.")}
 });
 async function deleteLog(id){confirmAction("Να διαγραφεί αυτή η κίνηση;",async()=>{try{await api("/api/logs/"+id,{method:"DELETE"});await refreshAll();toast("Η κίνηση διαγράφηκε.")}catch(e){toast("Η διαγραφή απέτυχε.")}})}
@@ -143,14 +146,14 @@ function renderUsers(){
 $("#userForm").addEventListener("submit",async e=>{
   e.preventDefault();try{
     await api("/api/users",{method:"POST",body:JSON.stringify({name:$("#newUserName").value,email:$("#newUserEmail").value,password:$("#newUserPassword").value,role:$("#newUserRole").value})});
-    e.currentTarget.reset();await refreshAll();toast("Ο χρήστης δημιουργήθηκε.");
+    e.target.reset();await refreshAll();toast("Ο χρήστης δημιουργήθηκε.");
   }catch(err){toast(err.code==="email_exists"?"Υπάρχει ήδη αυτό το email.":"Δεν μπόρεσε να δημιουργηθεί ο χρήστης.")}
 });
 async function deleteUser(id){const u=users.find(x=>String(x.id)===String(id));if(!u)return;confirmAction("Να διαγραφεί ο χρήστης "+u.name+" μαζί με όλα τα οχήματα και τις κινήσεις του;",async()=>{try{await api("/api/users/"+id,{method:"DELETE"});await refreshAll();toast("Ο χρήστης διαγράφηκε.")}catch(e){toast("Η διαγραφή απέτυχε.")}})}
 
 function renderDashboard(){
   const g=globalStats();$("#heroCost").textContent=money(g.spend);$("#heroSub").textContent=logs.length+" κινήσεις · "+vehicles.length+" οχήματα"+(isAdmin()?" · "+users.length+" χρήστες":"");
-  $("#totalSpend").textContent=money(g.spend);$("#totalLitres").textContent=num(g.litres)+" L";$("#avgPrice").textContent=money(g.avgPrice)+"/L";$("#avgConsumption").textContent=g.avgConsumption?num(g.avgConsumption)+" L/100km":"—";
+  $("#fuelSpend").textContent=money(g.spend);$("#totalLitres").textContent=num(g.litres)+" L";$("#avgPrice").textContent=money(g.avgPrice)+"/L";$("#avgConsumption").textContent=g.avgConsumption?num(g.avgConsumption)+" L/100km":"—";
   const vs=$("#vehicleSummary");vs.className=vehicles.length?"vehicle-summary":"vehicle-summary empty-state";vs.innerHTML=vehicles.length?vehicles.map(v=>{const s=vehicleStats(v.id);return '<div class="vehicle-mini"><div class="vehicle-mini-top"><strong>'+esc(v.plate)+'</strong><span>'+money(s.spend)+'</span></div><small>'+esc(v.model)+(isAdmin()&&v.ownerName?' · '+esc(v.ownerName):'')+'</small><div class="metric-row"><span>'+num(s.litres)+' L</span><span>'+(s.avgConsumption?num(s.avgConsumption)+" L/100km":"χωρίς μέτρηση")+'</span></div></div>'}).join(""):"Δεν υπάρχουν οχήματα.";
   const recent=logs.slice(0,5),box=$("#recentList");box.className=recent.length?"recent-list":"recent-list empty-state";box.innerHTML=recent.length?recent.map(l=>'<div class="recent-item"><div class="recent-top"><div><strong>'+esc(l.vehiclePlate)+'</strong><br><small>'+esc(l.date)+(isAdmin()?' · '+esc(l.ownerName):'')+'</small></div><strong>'+money(l.amount)+'</strong></div></div>').join(""):"Δεν υπάρχουν κινήσεις.";
   drawCostChart();

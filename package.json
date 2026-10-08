@@ -1,13 +1,23 @@
 {
-  "name":"oilbank",
-  "version":"3.0.0",
-  "private":true,
-  "type":"commonjs",
-  "scripts":{"start":"node server.js"},
-  "dependencies":{
-    "bcryptjs":"^2.4.3",
-    "express":"^4.21.2",
-    "jsonwebtoken":"^9.0.2",
-    "pg":"^8.13.3"
+  "name": "oilbank",
+  "version": "3.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.js",
+    "setup": "node --env-file-if-exists=.env scripts/setup.js",
+    "migrate": "node --env-file-if-exists=.env scripts/manage.js migrate",
+    "backup": "node --env-file-if-exists=.env scripts/manage.js backup",
+    "restore": "node --env-file-if-exists=.env scripts/manage.js restore",
+    "export": "node --env-file-if-exists=.env scripts/manage.js export",
+    "test": "node --test --test-concurrency=1"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "express": "5.1.0",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "engines": {
+    "node": ">=24.0.0 <25"
   }
 }

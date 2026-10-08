@@ -8,3 +8,12 @@ coverage/
 dist/
 *.key
 *.pem
+
+data/*
+!data/.gitkeep
+documents/*
+!documents/.gitkeep
+backups/*
+!backups/.gitkeep
+exports/*
+!exports/.gitkeep

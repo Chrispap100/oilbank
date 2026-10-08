@@ -1,55 +1,82 @@
-# OilBank
+# OilBank — τοπική έκδοση SQLite
 
-Multi-user vehicle, fuel, expense and compliance manager.
+Βάση: `Chrispap100/oilbank`, branch `oilbank-multiuser`, commit `9f518ba73badf44ff1cda473e956bd07ff4ebe28`.
+Αλλαγές αποκλειστικά στο νέο branch `oilbank-local-sqlite`. Δεν απαιτούνται Render, PostgreSQL ή cloud database.
 
-## Stack
-- Node.js / Express
-- PostgreSQL
-- Vanilla JS responsive frontend
-- Render deployment
-- OpenAI vision extraction for vehicle documents
-- PWA shell + service worker
+## Πρώτη εγκατάσταση σε Windows
 
-## Main features
-- Super Admin / User roles
-- Vehicle ownership and permission isolation
-- Fuel tracking and consumption
-- Expenses / service
-- KTEO, insurance, emissions card and road tax
-- Smart photo/PDF document extraction with confirmation
-- Duplicate document detection
-- Audit log
-- Reporting by vehicle, user, category and year
-- JSON backup and admin restore
-- Installable PWA and online/offline state
+1. Εγκατάστησε **Node.js 24 LTS για Windows** από https://nodejs.org/ με την επιλογή npm και προσθήκη στο PATH. Δεν χρειάζεται ξεχωριστή εγκατάσταση SQLite, Python ή compiler.
+2. Αποσυμπίεσε το OilBank σε δικό του φάκελο, π.χ. `C:\OilBank`. Απόφυγε κοινόχρηστο/network drive ή φάκελο που συγχρονίζεται ενεργά με OneDrive.
+3. Κάνε διπλό κλικ στο **start-oilbank.bat**. Την πρώτη φορά κατεβάζει τις εξαρτήσεις (απαιτεί Internet).
+4. Δώσε όνομα και email για τον τοπικό διαχειριστή. Το email είναι μόνο αναγνωριστικό σύνδεσης· δεν αποστέλλεται email. Θα εμφανιστεί ένας τυχαίος αρχικός κωδικός. **Αποθήκευσέ τον.** Μπορείς να τον αλλάξεις από Χρήστες → Reset.
+5. Η εφαρμογή ανοίγει στο **http://127.0.0.1:10000**. Κράτησε ανοικτό το παράθυρο εκκίνησης. Για διακοπή πάτησε Ctrl+C.
 
-## Environment variables
-See `.env.example`.
+Στις επόμενες εκκινήσεις αρκεί διπλό κλικ στο ίδιο αρχείο. Η εφαρμογή χρησιμοποιεί την ίδια βάση. Οι συνηθισμένες λειτουργίες και η χειροκίνητη αποθήκευση εγγράφων λειτουργούν χωρίς Internet.
 
-Never commit real secrets.
+Εναλλακτικά, μέσα στον φάκελο:
 
-## Local setup
-1. Node 20+
-2. `npm install`
-3. Copy `.env.example` to `.env` and fill values.
-4. Start PostgreSQL.
-5. `npm start`
+```powershell
+npm install
+npm run setup
+npm start
+```
 
-## Security notes
-- Passwords are hashed with bcrypt.
-- Admin-visible issued credentials are additionally encrypted with `VAULT_KEY`.
-- OpenAI API key stays server-side.
-- Users are restricted server-side to their own vehicles/data.
-- Uploaded documents require authentication to retrieve.
+Το setup δημιουργεί λογαριασμό μόνο όταν δεν υπάρχουν χρήστες. Δεν επαναφέρει κωδικούς σε κάθε εκκίνηση. Δεν περιλαμβάνονται προεπιλεγμένοι κοινόχρηστοι κωδικοί.
 
-## Deployment
-Render web service:
-- Build: `npm install`
-- Start: `npm start`
-- PostgreSQL via `DATABASE_URL`
+## Τι διατηρείται
 
-## Backup
-Super Admin can download a JSON backup and restore compatible records from Settings.
+Το αρχικό ελληνικό UI, χρώματα και γραφικά παραμένουν. Διατηρούνται login, super admin/user, αιτήσεις και έγκριση, απενεργοποίηση/αρχειοθέτηση, reset κωδικών, Admin Vault, οχήματα, καύσιμα, έξοδα, υποχρεώσεις, αναφορές, έγγραφα, επιβεβαίωση παραστατικών και audit log. Προστέθηκαν χειροκίνητη καταχώριση εγγράφων, πλήρες τοπικό backup/restore και CSV export.
 
-## PWA
-`manifest.webmanifest` and `sw.js` provide installability and cached application shell.
+Ο server ακούει αποκλειστικά στο `127.0.0.1`. Οι λογαριασμοί παραμένουν ξεχωριστοί, αλλά αυτή η έκδοση προορίζεται για έναν υπολογιστή, όχι πρόσβαση από άλλες συσκευές.
+
+## Αποθήκευση
+
+- `data/oilbank.db`: SQLite με foreign keys, WAL και αριθμημένες migrations (`PRAGMA user_version`). Το σχήμα δημιουργείται αυτόματα. Τα `-wal`/`-shm` είναι αρχεία λειτουργίας της SQLite.
+- `documents/`: πρωτότυπα αρχεία PDF/JPEG/PNG/WebP, έως 12 MB ανά αρχείο. Τα εσωτερικά ονόματα είναι SHA-256 hashes με κατάληξη `.bin`. Η βάση κρατά σχετικό path, αρχικό όνομα, MIME type, μέγεθος, hash και υπόλοιπα metadata· κανένα μεγάλο blob.
+- `backups/`: πλήρη JSON πακέτα που περιέχουν πραγματικό snapshot SQLite και όλα τα αναφερόμενα αρχεία σε base64.
+- `exports/`: ξεχωριστός χρονολογημένος φάκελος ανά εξαγωγή, με επτά CSV.
+
+Οι φάκελοι και τα μυστικά δημιουργούνται αυτόματα και εξαιρούνται από Git. Τα ιδιωτικά αρχεία δεν διατίθενται από τον web server. Μην διαγράφεις χειροκίνητα αρχεία από `data/` ή `documents/`.
+
+## Backup και επαναφορά
+
+**Ρυθμίσεις → Λήψη πλήρους JSON Backup**: αποθηκεύεται αντίγραφο στον φάκελο `backups/` και κατεβαίνει επίσης στον browser. Δημιουργείται πλήρες αντίγραφο σε κάθε εκκίνηση. Δεν διαγράφονται αυτόματα παλαιά αντίγραφα: παρακολούθησε τον χώρο και φύλαξε επιπλέον αντίγραφα σε άλλο δίσκο.
+
+**Ρυθμίσεις → Επαναφορά Backup**: επιλέγεις αρχείο αυτής της τοπικής έκδοσης και επιβεβαιώνεις. Η επαναφορά **αντικαθιστά** δεδομένα και λογαριασμούς· δεν κάνει συγχώνευση. Ελέγχει checksum, σχήμα, σχέσεις και όλα τα έγγραφα πριν την αλλαγή. Δημιουργεί `before-restore-…json` με την προηγούμενη κατάσταση, επαναφέρει τη βάση σε transaction και απαιτεί νέα σύνδεση με λογαριασμό του backup.
+
+Αν τα τωρινά έγγραφα έχουν ήδη χαθεί/αλλοιωθεί, η επαναφορά από έγκυρο backup τα ανακτά. Το αντίγραφο της προηγούμενης κατάστασης επισημαίνει τα χαμένα αρχεία στο `missingDocuments` και τότε δεν αποτελεί πλήρες ανακτήσιμο backup.
+
+Το backup περιλαμβάνει password hashes και τα κλειδιά του Admin Vault. **Δεν είναι κρυπτογραφημένο.** Φύλαξέ το με την ίδια προστασία που δίνεις στα προσωπικά σου έγγραφα. Δεν περιλαμβάνει `.env`, OpenAI API key ή τις εγκατεστημένες εξαρτήσεις.
+
+Το UI δέχεται backup έως 200 MB JSON. Για μεγαλύτερα αρχεία χρησιμοποίησε την εντολή restore με την εφαρμογή κλειστή. Η δημιουργία/επαναφορά κρατά το πακέτο στη μνήμη, επομένως μεγάλα σύνολα εγγράφων χρειάζονται αντίστοιχη διαθέσιμη RAM. Οι αιτήσεις της εφαρμογής εκτελούνται διαδοχικά ώστε να μην παρεμβάλλονται εγγραφές στη διάρκεια συναλλαγών/επαναφοράς.
+
+## CSV export
+
+**Ρυθμίσεις → Export όλων των δεδομένων σε CSV** (διαχειριστής). Τα αρχεία αποθηκεύονται στο `exports/<ημερομηνία>/`:
+`users.csv`, `vehicles.csv`, `fuel_logs.csv`, `expenses.csv`, `obligations.csv`, `documents.csv`, `audit_log.csv`.
+
+UTF-8 με BOM για ελληνικά στο Excel, comma delimiter και quoted fields. Αν το Excel δεν χωρίσει αυτόματα στήλες, χρησιμοποίησε Δεδομένα → Από κείμενο/CSV → UTF-8 → Κόμμα. Δεν εξάγονται password hashes ή κλειδιά. Η εξαγωγή εγγράφων περιέχει metadata, όχι τα ίδια τα αρχεία. Τα CSV προορίζονται για ανάγνωση/ανάλυση, όχι για restore. Τα κελιά που μοιάζουν με τύπους προστατεύονται με αρχικό απόστροφο.
+
+## Εντολές συντήρησης
+
+Κλείσε την εφαρμογή πριν από τις παρακάτω εντολές (πέρα από τα tests). Το lock αποτρέπει δεύτερο server και ταυτόχρονη συντήρηση.
+
+```powershell
+npm run migrate
+npm run backup
+npm run export
+npm run restore -- "C:\path\oilbank-backup.json" --confirm
+npm test
+```
+
+Τα tests χρησιμοποιούν προσωρινό φάκελο και ξεχωριστή βάση και δεν αγγίζουν προσωπικά δεδομένα. Ελέγχουν login, users/roles/status, οχήματα, καύσιμα, έξοδα, υποχρεώσεις, upload/ανάκτηση/επιβεβαίωση εγγράφων, audit, CSV, rollback, αλλοιωμένα backup, πλήρη επαναφορά και πρόσβαση σε ιδιωτικά αρχεία.
+
+## Προαιρετικές ρυθμίσεις και AI
+
+Αν χρειάζεται, αντέγραψε το `.env.example` σε `.env`. Το Node φορτώνει το `.env` μέσω των package scripts. `PORT` αλλάζει θύρα, `OILBANK_HOME` αλλάζει τον φάκελο δεδομένων και `OILBANK_AUTO_BACKUP=0` απενεργοποιεί το αντίγραφο εκκίνησης.
+
+Η παλιά **Ανάγνωση με AI** διατηρήθηκε ως προαιρετική λειτουργία: απαιτεί `OPENAI_API_KEY`, Internet και ενδέχεται να χρεωθεί από τον πάροχο. Μόνο με πάτημα του κουμπιού AI αποστέλλεται το επιλεγμένο έγγραφο στην υπηρεσία. Η **Τοπική αποθήκευση & χειροκίνητη καταχώριση** δεν χρησιμοποιεί AI. Η πραγματική κλήση AI δεν συμπεριλαμβάνεται στα offline tests.
+
+## Μεταφορά από την παλιά παραγωγή
+
+Αυτή η παράδοση μεταφέρει τον κώδικα και το σχήμα, **όχι τα δεδομένα της cloud βάσης**. Η πρώτη τοπική εκκίνηση ξεκινά με κενή βάση. Το παλιό JSON export του branch παραγωγής δεν περιείχε password hashes ή bytes εγγράφων, οπότε δεν μπορεί να χρησιμοποιηθεί ως πλήρες local restore και απορρίπτεται ρητά. Για μεταφορά υπαρχόντων δεδομένων χρειάζεται ξεχωριστή εξαγωγή της PostgreSQL και των εγγράφων. Το branch παραγωγής και το Render δεν αλλάζουν.

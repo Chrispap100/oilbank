@@ -90,12 +90,12 @@ function renderDocumentsV4(){
 }
 function renderV4(){populateV4();renderDashboardV4();renderExpensesV4();renderObligationsV4();renderUsersV4();renderAuditV4();renderDocumentsV4();reportV4()}
 
-$("#registerForm")&&$("#registerForm").addEventListener("submit",async function(e){e.preventDefault();try{await api("/api/register-request",{method:"POST",body:JSON.stringify({name:$("#regName").value,email:$("#regEmail").value})});$("#registerMsg").textContent="Η αίτηση στάλθηκε. Περιμένει έγκριση από τον Super Admin.";e.currentTarget.reset()}catch(err){$("#registerMsg").textContent=err.code==="email_exists"?"Υπάρχει ήδη αυτό το email.":"Δεν μπόρεσε να σταλεί η αίτηση."}});
+$("#registerForm")&&$("#registerForm").addEventListener("submit",async function(e){e.preventDefault();try{await api("/api/register-request",{method:"POST",body:JSON.stringify({name:$("#regName").value,email:$("#regEmail").value})});$("#registerMsg").textContent="Η αίτηση στάλθηκε. Περιμένει έγκριση από τον Super Admin.";e.target.reset()}catch(err){$("#registerMsg").textContent=err.code==="email_exists"?"Υπάρχει ήδη αυτό το email.":"Δεν μπόρεσε να σταλεί η αίτηση."}});
 $("#showRegister")&&$("#showRegister").addEventListener("click",function(){$("#loginPane").classList.add("hidden");$("#registerPane").classList.remove("hidden")});
 $("#backLogin")&&$("#backLogin").addEventListener("click",function(){$("#registerPane").classList.add("hidden");$("#loginPane").classList.remove("hidden")});
 
-$("#expenseForm")&&$("#expenseForm").addEventListener("submit",async function(e){e.preventDefault();try{await api("/api/expenses",{method:"POST",body:JSON.stringify({vehicleId:$("#expenseVehicle").value,category:$("#expenseCategory").value,date:$("#expenseDate").value,amount:Number($("#expenseAmount").value),odometer:$("#expenseOdo").value||null,title:$("#expenseTitle").value,vendor:$("#expenseVendor").value,nextDueDate:$("#expenseDueDate").value||null,nextDueOdometer:$("#expenseNextOdo").value||null,notes:$("#expenseNotes").value})});e.currentTarget.reset();$("#expenseDate").value=today();await refreshAll();toast("Το έξοδο αποθηκεύτηκε.")}catch(e){toast("Αποτυχία αποθήκευσης.")}});
-$("#obligationForm")&&$("#obligationForm").addEventListener("submit",async function(e){e.preventDefault();try{await api("/api/obligations",{method:"POST",body:JSON.stringify({vehicleId:$("#obVehicle").value,type:$("#obType").value,title:$("#obTitle").value,startDate:$("#obStart").value||null,dueDate:$("#obDue").value||null,amount:Number($("#obAmount").value)||0,provider:$("#obProvider").value,referenceNo:$("#obRef").value,paid:$("#obPaid").checked,notes:$("#obNotes").value})});e.currentTarget.reset();await refreshAll();toast("Η υποχρέωση αποθηκεύτηκε.")}catch(e){toast("Αποτυχία αποθήκευσης.")}});
+$("#expenseForm")&&$("#expenseForm").addEventListener("submit",async function(e){e.preventDefault();try{await api("/api/expenses",{method:"POST",body:JSON.stringify({vehicleId:$("#expenseVehicle").value,category:$("#expenseCategory").value,date:$("#expenseDate").value,amount:Number($("#expenseAmount").value),odometer:$("#expenseOdo").value||null,title:$("#expenseTitle").value,vendor:$("#expenseVendor").value,nextDueDate:$("#expenseDueDate").value||null,nextDueOdometer:$("#expenseNextOdo").value||null,notes:$("#expenseNotes").value})});e.target.reset();$("#expenseDate").value=today();await refreshAll();toast("Το έξοδο αποθηκεύτηκε.")}catch(e){toast("Αποτυχία αποθήκευσης.")}});
+$("#obligationForm")&&$("#obligationForm").addEventListener("submit",async function(e){e.preventDefault();try{await api("/api/obligations",{method:"POST",body:JSON.stringify({vehicleId:$("#obVehicle").value,type:$("#obType").value,title:$("#obTitle").value,startDate:$("#obStart").value||null,dueDate:$("#obDue").value||null,amount:Number($("#obAmount").value)||0,provider:$("#obProvider").value,referenceNo:$("#obRef").value,paid:$("#obPaid").checked,notes:$("#obNotes").value})});e.target.reset();await refreshAll();toast("Η υποχρέωση αποθηκεύτηκε.")}catch(e){toast("Αποτυχία αποθήκευσης.")}});
 ["reportVehicle","reportUser","reportYear","reportCategory"].forEach(function(id){const e=$("#"+id);if(e)e.addEventListener("change",reportV4)});
 $("#backupBtn")&&$("#backupBtn").addEventListener("click",async function(){try{const d=await api("/api/backup"),bl=new Blob([JSON.stringify(d,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(bl);a.download="oilbank-backup-"+today()+".json";a.click();setTimeout(function(){URL.revokeObjectURL(a.href)},1000);toast("Το backup δημιουργήθηκε.")}catch(e){toast("Το backup απέτυχε.")}});
 $("#selfDeleteBtn")&&$("#selfDeleteBtn").addEventListener("click",function(){confirmAction("Θα χάσεις την πρόσβαση. Τα δεδομένα σου θα παραμείνουν στον Super Admin. Πάτησε συνέχεια για δεύτερη επιβεβαίωση.",function(){confirmAction("Τελική επιβεβαίωση: να αρχειοθετηθεί ο λογαριασμός σου;",async function(){await api("/api/self/archive",{method:"POST"});logout()})})});
@@ -142,17 +142,17 @@ async function confirmAiV4(){
  try{await api("/api/documents/"+pendingDocV4.documentId+"/confirm",{method:"POST",body:JSON.stringify({extraction:x})});pendingDocV4=null;$("#smartResult").innerHTML='<div class="attention-ok">✓ Το έγγραφο καταχωρίστηκε και επιβεβαιώθηκε.</div>';$("#smartFile").value="";$("#smartFileName").textContent="";await refreshAll();toast("Η καταχώριση ολοκληρώθηκε.")}catch(e){toast("Έλεγξε τα στοιχεία πριν την καταχώριση.")}
 }
 if($("#expenseDate"))$("#expenseDate").value=today();
-setInterval(function(){if((token||me)&&navigator.onLine)refreshAll().catch(function(){})},5000);
+setInterval(function(){if((token||me))refreshAll().catch(function(){})},5000);
 
 
 function updateNetV4(){
   const s=$("#syncStatus");if(!s)return;
-  s.textContent=navigator.onLine?"• Online":"• Offline";
-  s.style.color=navigator.onLine?"#86efac":"#fbbf24";
+  s.textContent="• Τοπική SQLite";
+  s.style.color="#86efac";
 }
 window.addEventListener("online",function(){updateNetV4();if(token||me)refreshAll().catch(function(){})});
 window.addEventListener("offline",updateNetV4);
-document.addEventListener("visibilitychange",function(){if(!document.hidden&&(token||me)&&navigator.onLine)refreshAll().catch(function(){})});
+document.addEventListener("visibilitychange",function(){if(!document.hidden&&(token||me))refreshAll().catch(function(){})});
 updateNetV4();
 
 if("serviceWorker" in navigator){
@@ -161,13 +161,13 @@ if("serviceWorker" in navigator){
 
 $("#restoreFile")&&$("#restoreFile").addEventListener("change",function(e){
   const f=e.target.files&&e.target.files[0];if(!f)return;
-  confirmAction("Η επαναφορά θα προσθέσει/επαναφέρει δεδομένα από το backup. Συνέχεια;",function(){
+  confirmAction("Η επαναφορά θα ΑΝΤΙΚΑΤΑΣΤΗΣΕΙ όλα τα δεδομένα και τους λογαριασμούς με το backup. Θα κρατηθεί αντίγραφο των τωρινών δεδομένων. Συνέχεια;",function(){
     const r=new FileReader();
     r.onload=async function(){
       try{
         const data=JSON.parse(r.result);
         await api("/api/backup/restore",{method:"POST",body:JSON.stringify(data)});
-        await refreshAll();toast("Το backup επαναφέρθηκε.");
+        await logout();toast("Το backup επαναφέρθηκε. Συνδέσου με λογαριασμό του backup.");
       }catch(err){toast("Η επαναφορά απέτυχε. Έλεγξε το αρχείο backup.")}
       e.target.value="";
     };
